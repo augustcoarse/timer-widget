@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Timer</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Syne:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0e0e0e;
+    --surface: #161616;
+    --border: #2a2a2a;
+    --accent: #c8f060;
+    --accent-dim: rgba(200, 240, 96, 0.12);
+    --text-primary: #f0f0f0;
+    --text-muted: #666;
+    --text-dim: #333;
+    --danger: #ff5c5c;
+    --radius: 4px;
+  }
+
+  html, body {
+    height: 100%;
+    background: var(--bg);
+    color: var(--text-primary);
+    font-family: 'Syne', sans-serif;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+
+  .container {
+    width: 360px;
+    padding: 40px 36px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    position: relative;
+  }
+
+  /* Header */
+  .header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 36px;
+  }
+
+  .label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+
+  .status-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--text-dim);
+    transition: background 0.3s;
+  }
+  .status-dot.running { background: var(--accent); box-shadow: 0 0 8px var(--accent); }
+  .status-dot.done { background: var(--danger); box-shadow: 0 0 8px var(--danger); }
+
+  /* Quick select */
+  .quick-select {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 40px;
+  }
+
+  .quick-btn {
+    flex: 1;
+    padding: 10px 0;
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    color: var(--text-muted);
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    font-weight: 400;
+    cursor: pointer;
+    transition: all 0.15s;
+    letter-spacing: 0.04em;
+  }
+
+  .quick-btn:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: var(--accent-dim);
+  }
+
+  .quick-btn.active {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: var(--accent-dim);
+  }
+
+  /* Timer display */
+  .timer-display {
+    text-align: center;
+    margin-bottom: 12px;
+    position: relative;
+  }
+
+  .time-value {
+    font-family: 'DM Mono', monospace;
+    font-size: 72px;
+    font-weight: 300;
+    letter-spacing: -0.02em;
+    line-height: 1;
+    color: var(--text-primary);
+    transition: color 0.3s;
+    user-select: none;
+  }
+
+  .time-value.done { color: var(--danger); }
+
+  /* Progress bar */
+  .progress-track {
+    width: 100%;
+    height: 2px;
+    background: var(--border);
+    border-radius: 1px;
+    margin-bottom: 40px;
+    overflow: hidden;
+  }
+
+  .progress-fill {
+    height: 100%;
+    background: var(--accent);
+    border-radius: 1px;
+    width: 100%;
+    transform-origin: left;
+    transition: transform 0.5s linear, background 0.3s;
+  }
+
+  .progress-fill.done { background: var(--danger); }
+
+  /* Controls */
+  .controls {
+    display: flex;
+    gap: 10px;
+  }
+
+  .btn-primary {
+    flex: 1;
+    padding: 14px;
+    background: var(--accent);
+    border: none;
+    border-radius: var(--radius);
+    color: #0e0e0e;
+    font-family: 'Syne', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .btn-primary:hover { opacity: 0.88; }
+  .btn-primary:active { transform: scale(0.98); }
+
+  .btn-secondary {
+    padding: 14px 20px;
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    color: var(--text-muted);
+    font-family: 'Syne', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .btn-secondary:hover {
+    border-color: var(--text-muted);
+    color: var(--text-primary);
+  }
+
+  /* Custom input row */
+  .custom-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 1px solid var(--border);
+  }
+
+  .custom-row label {
+    font-size: 10px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    white-space: nowrap;
+    font-weight: 600;
+  }
+
+  .custom-input {
+    flex: 1;
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    color: var(--text-primary);
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    padding: 7px 10px;
+    outline: none;
+    transition: border-color 0.15s;
+    width: 60px;
+    text-align: center;
+  }
+
+  .custom-input:focus { border-color: var(--accent); }
+
+  .custom-sep {
+    color: var(--text-dim);
+    font-family: 'DM Mono', monospace;
+    font-size: 14px;
+  }
+
+  .btn-set {
+    padding: 7px 14px;
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    color: var(--text-muted);
+    font-family: 'Syne', sans-serif;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .btn-set:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  /* Flash animation when done */
+  @keyframes flash {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+  .time-value.flashing { animation: flash 0.8s ease infinite; }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <span class="label">Timer</span>
+    <div class="status-dot" id="statusDot"></div>
+  </div>
+
+  <div class="quick-select">
+    <button class="quick-btn" data-seconds="120">2 min</button>
+    <button class="quick-btn" data-seconds="900">15 min</button>
+    <button class="quick-btn" data-seconds="3600">1 hr</button>
+  </div>
+
+  <div class="timer-display">
+    <div class="time-value" id="timeDisplay">00:00</div>
+  </div>
+
+  <div class="progress-track">
+    <div class="progress-fill" id="progressFill"></div>
+  </div>
+
+  <div class="controls">
+    <button class="btn-primary" id="startBtn">Start</button>
+    <button class="btn-secondary" id="resetBtn">Reset</button>
+  </div>
+
+  <div class="custom-row">
+    <label>Custom</label>
+    <input class="custom-input" type="number" id="customHr" placeholder="HH" min="0" max="23" value="">
+    <span class="custom-sep">:</span>
+    <input class="custom-input" type="number" id="customMin" placeholder="MM" min="0" max="59" value="">
+    <span class="custom-sep">:</span>
+    <input class="custom-input" type="number" id="customSec" placeholder="SS" min="0" max="59" value="">
+    <button class="btn-set" id="setBtn">Set</button>
+  </div>
+</div>
+
+<script>
+  let totalSeconds = 0;
+  let remainingSeconds = 0;
+  let intervalId = null;
+  let running = false;
+  let done = false;
+
+  const timeDisplay = document.getElementById('timeDisplay');
+  const startBtn = document.getElementById('startBtn');
+  const resetBtn = document.getElementById('resetBtn');
+  const progressFill = document.getElementById('progressFill');
+  const statusDot = document.getElementById('statusDot');
+  const quickBtns = document.querySelectorAll('.quick-btn');
+
+  function formatTime(s) {
+    const h = Math.floor(s / 3600);
+    const m = Math.floor((s % 3600) / 60);
+    const sec = s % 60;
+    if (h > 0) {
+      return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`;
+    }
+    return `${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`;
+  }
+
+  function updateDisplay() {
+    timeDisplay.textContent = formatTime(remainingSeconds);
+    const pct = totalSeconds > 0 ? remainingSeconds / totalSeconds : 1;
+    progressFill.style.transform = `scaleX(${pct})`;
+  }
+
+  function setTimer(seconds) {
+    pause();
+    totalSeconds = seconds;
+    remainingSeconds = seconds;
+    done = false;
+    timeDisplay.classList.remove('done', 'flashing');
+    progressFill.classList.remove('done');
+    statusDot.className = 'status-dot';
+    startBtn.textContent = 'Start';
+    updateDisplay();
+  }
+
+  function start() {
+    if (remainingSeconds <= 0) return;
+    running = true;
+    done = false;
+    startBtn.textContent = 'Pause';
+    statusDot.className = 'status-dot running';
+    intervalId = setInterval(() => {
+      remainingSeconds--;
+      updateDisplay();
+      if (remainingSeconds <= 0) {
+        finish();
+      }
+    }, 1000);
+  }
+
+  function pause() {
+    running = false;
+    clearInterval(intervalId);
+    intervalId = null;
+    if (!done) {
+      startBtn.textContent = 'Resume';
+      statusDot.className = 'status-dot';
+    }
+  }
+
+  function finish() {
+    pause();
+    done = true;
+    timeDisplay.classList.add('done', 'flashing');
+    progressFill.classList.add('done');
+    statusDot.className = 'status-dot done';
+    startBtn.textContent = 'Start';
+    beep();
+  }
+
+  function beep() {
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const play = (freq, start, dur) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.frequency.value = freq;
+        osc.type = 'sine';
+        gain.gain.setValueAtTime(0, ctx.currentTime + start);
+        gain.gain.linearRampToValueAtTime(0.4, ctx.currentTime + start + 0.01);
+        gain.gain.linearRampToValueAtTime(0, ctx.currentTime + start + dur);
+        osc.start(ctx.currentTime + start);
+        osc.stop(ctx.currentTime + start + dur + 0.05);
+      };
+      play(880, 0, 0.15);
+      play(880, 0.2, 0.15);
+      play(1100, 0.4, 0.3);
+    } catch(e) {}
+  }
+
+  startBtn.addEventListener('click', () => {
+    if (totalSeconds === 0 && remainingSeconds === 0) return;
+    if (done) { return; }
+    if (running) { pause(); } else { start(); }
+  });
+
+  resetBtn.addEventListener('click', () => {
+    setTimer(totalSeconds);
+  });
+
+  quickBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      quickBtns.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      setTimer(parseInt(btn.dataset.seconds));
+    });
+  });
+
+  document.getElementById('setBtn').addEventListener('click', () => {
+    const h = parseInt(document.getElementById('customHr').value) || 0;
+    const m = parseInt(document.getElementById('customMin').value) || 0;
+    const s = parseInt(document.getElementById('customSec').value) || 0;
+    const total = h * 3600 + m * 60 + s;
+    if (total > 0) {
+      quickBtns.forEach(b => b.classList.remove('active'));
+      setTimer(total);
+    }
+  });
+
+  // Init display
+  updateDisplay();
+</script>
+</body>
+</html>
